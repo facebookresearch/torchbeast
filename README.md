@@ -23,6 +23,7 @@ requirements:
 ```bash
 $ conda create -n torchbeast python=3.7
 $ conda activate torchbeast
+$ conda install pytorch -c pytorch
 $ pip install -r requirements.txt
 ```
 
