@@ -331,7 +331,7 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     if flags.num_actors >= flags.num_buffers:
         raise ValueError("num_buffers should be larger than num_actors")
     if flags.num_buffers < flags.batch_size:
-        raise ValueError("num_buffers should be larger than num_actors")
+        raise ValueError("num_buffers should be larger than batch_size")
 
     T = flags.unroll_length
     B = flags.batch_size
