@@ -599,7 +599,7 @@ class AtariNet(nn.Module):
         if self.use_lstm:
             core_input = core_input.view(T, B, -1)
             core_output_list = []
-            notdone = (1 - inputs["done"]).float()
+            notdone = 1 - inputs["done"].float()
             for input, nd in zip(core_input.unbind(), notdone.unbind()):
                 # Reset core state to zero whenever an episode ended.
                 # Make `done` broadcastable with (num_layers, B, hidden_size)
