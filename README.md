@@ -13,6 +13,19 @@ PyTorch.
 
 For further details, see our [paper](https://arxiv.org/abs/1910.03552).
 
+
+## BibTeX
+
+```
+@article{torchbeast2019,
+  title={{TorchBeast: A PyTorch Platform for Distributed RL}},
+  author={Heinrich K\"{u}ttler and Nantas Nardelli and Thibaut Lavril and Marco Selvatici and Viswanath Sivakumar and Tim Rockt\"{a}schel and Edward Grefenstette},
+  year={2019},
+  journal={arXiv preprint arXiv:1910.03552},
+  url={https://github.com/facebookresearch/torchbeast},
+}
+```
+
 ## Getting started: MonoBeast
 
 MonoBeast is a pure Python + PyTorch implementation of IMPALA.
