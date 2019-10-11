@@ -16,6 +16,7 @@ AttentionNet is a pytorch reimpl. of the following paper for the NeurIPS reprodu
 }
 """
 
+
 class AttentionNet(nn.Module):
     def __init__(
         self,
@@ -46,7 +47,6 @@ class AttentionNet(nn.Module):
 
         # This is a function of the CNN hp and the input image size.
         self.height, self.width = 17, 17
-
 
         self.vision = VisionNetwork()
         self.query = QueryNetwork(hidden_size, num_queries, self.num_keys)
@@ -207,6 +207,7 @@ class AttentionNet(nn.Module):
             dict(policy_logits=policy_logits, baseline=baseline, action=action),
             next_state,
         )
+
 
 class ConvLSTMCell(nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
@@ -428,7 +429,7 @@ class SpatialBasis:
 
 
 def spatial_softmax(A):
-    """Softmax over the attention map.
+    r"""Softmax over the attention map.
 
     Ignoring batches, this operation produces a tensor of the original shape
     that has been normalized across its "spatial" dimension `h` and `w`.
@@ -450,7 +451,7 @@ def spatial_softmax(A):
 
 
 def apply_attention(A, V):
-    """Applies set of attention matrices A over V.
+    r"""Applies set of attention matrices A over V.
 
     Ignoring batches the operation produces a tensor of shape [num_queries, num_values]
     and follows the following equation:
@@ -470,13 +471,11 @@ def apply_attention(A, V):
 
     # [B, h, w, num_queries] -> [B, h * w, num_queries]
     A = A.reshape(b, h * w, num_queries)
-    # [B, h * w, num_queries] -> [B, num_queries, h * w] 
+    # [B, h * w, num_queries] -> [B, num_queries, h * w]
     A = A.transpose(1, 2)
-
-    # [B, h, w, num_values] -> [B, h * w, num_values] 
+    # [B, h, w, num_values] -> [B, h * w, num_values]
     V = V.reshape(b, h * w, num_values)
-
-    # [B, h * w, num_values] x [B, num_queries, h * w] -> [B, num_queries, num_values] 
+    # [B, h * w, num_values] x [B, num_queries, h * w] -> [B, num_queries, num_values]
     return torch.matmul(A, V)
 
 
@@ -486,4 +485,3 @@ def splice_core_state(state: Tuple) -> Tuple:
 
 def splice_vision_state(state: Tuple) -> Tuple:
     return state[2], state[3]
-
