@@ -1,8 +1,10 @@
 # Towards Interpretable Reinforcement Learning Using Attention Augmented Agents
 This fork is an reimplementation of Mott, 2019 for the NeurIPS reproducibility challenge. We use this repo instead of IMPALA, to compare across frameworks.
 
-```python
+```shell
 python -m torchbeast.monobeast
+./job.sh   # or with Mott, 2019 hyperparameters (I think)
+qsub job.sh   # remotely, but single machine.
 ```
 
 The model is configured for `Seaquest-V0`, and other games will not work.
