@@ -35,11 +35,12 @@ from torchbeast.core import file_writer
 from torchbeast.core import prof
 from torchbeast.core import vtrace
 
+from torchbeast import attention_net
 
 # yapf: disable
 parser = argparse.ArgumentParser(description="PyTorch Scalable Agent")
 
-parser.add_argument("--env", type=str, default="PongNoFrameskip-v4",
+parser.add_argument("--env", type=str, default="Seaquest-v0",
                     help="Gym environment.")
 parser.add_argument("--mode", default="train",
                     choices=["train", "test", "test_render"],
@@ -207,8 +208,9 @@ def get_batch(
     batch = {
         key: torch.stack([buffers[key][m] for m in indices], dim=1) for key in buffers
     }
-    initial_agent_state = (
-        torch.cat(ts, dim=1)
+    # TODO: AttentionNet is batch first.
+    initial_agent_state = tuple(
+        torch.cat(ts, dim=0)
         for ts in zip(*[initial_agent_state_buffers[m] for m in indices])
     )
     timings.time("batch")
@@ -632,7 +634,7 @@ class AtariNet(nn.Module):
         )
 
 
-Net = AtariNet
+Net = attention_net.AttentionNet
 
 
 def create_env(flags):
