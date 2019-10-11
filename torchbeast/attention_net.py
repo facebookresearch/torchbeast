@@ -16,6 +16,7 @@ AttentionNet is a pytorch reimpl. of the following paper for the NeurIPS reprodu
 }
 """
 
+
 class AttentionNet(nn.Module):
     def __init__(
         self,
@@ -29,6 +30,11 @@ class AttentionNet(nn.Module):
         num_queries: int = 4,
     ):
         """AttentionNet implementing the attention agent.
+
+        NOTE: Because we use TorchBeast and they format the Atari frames to have a different shape (84x84),
+        the downstream sizes for some things change compared to the original paper. Mainly, the height
+        and width the resulting keys, querys, values are 17 by 17, not 27 by 20. This may be a good place
+        to start if we find the results don't replicate.
         """
         super(AttentionNet, self).__init__()
 
@@ -36,22 +42,27 @@ class AttentionNet(nn.Module):
         self.num_actions = num_actions
         self.hidden_size = hidden_size
         self.c_v, self.c_k, self.c_s, self.num_queries = c_v, c_k, c_s, num_queries
+        self.num_keys = c_k + c_s
+        self.num_values = c_v + c_s
+
+        # This is a function of the CNN hp and the input image size.
+        self.height, self.width = 17, 17
 
         self.vision = VisionNetwork()
-        self.query = QueryNetwork()
-        self.spatial = SpatialBasis()
+        self.query = QueryNetwork(hidden_size, num_queries, self.num_keys)
+        self.spatial = SpatialBasis(self.height, self.width)
 
         self.answer_processor = nn.Sequential(
             # 1043 x 512
             nn.Linear(
-                (c_v + c_s) * num_queries
-                + (c_k + c_s) * num_queries
+                self.num_values * num_queries
+                + self.num_keys * num_queries
                 + 1
                 + self.num_actions,
-                512,
+                hidden_size * 2,  # 512, HP from the authors.
             ),
             nn.ReLU(),
-            nn.Linear(512, hidden_size),
+            nn.Linear(hidden_size * 2, hidden_size),
         )
 
         # self.policy_core = nn.LSTMCell(hidden_size, hidden_size)
@@ -62,15 +73,14 @@ class AttentionNet(nn.Module):
     def initial_state(self, batch_size):
         # NOTE: Hard-coded values.
         core_zeros = torch.zeros(batch_size, self.hidden_size).float()
-        height, width = 17, 17
         conv_zeros = torch.zeros(
-            batch_size, self.hidden_size // 2, height, width
+            batch_size, self.hidden_size // 2, self.height, self.width
         ).float()
         return (
-            core_zeros.clone(),  # hidden
-            core_zeros.clone(),  # cell
-            conv_zeros.clone(),  # hidden
-            conv_zeros.clone(),  # cell
+            core_zeros.clone(),  # hidden for policy core
+            core_zeros.clone(),  # cell for policy core
+            conv_zeros.clone(),  # hidden for vision lstm
+            conv_zeros.clone(),  # cell for vision lstm
         )
 
     def forward(self, inputs, prev_state):
@@ -83,14 +93,14 @@ class AttentionNet(nn.Module):
         T, B, *_ = X.size()
 
         vision_state = splice_vision_state(prev_state)
-        # -> [N, c_k+c_v, h, w] s.t. N = T * B.
+        # -> [N, c_k+c_v, h, w] where N = T * B.
         O, next_vision_state = self.vision(X, inputs, vision_state)
         # -> [N, h, w, c_k+c_v]
         O = O.transpose(1, 3)
 
         # -> [N, h, w, c_k], [N, h, w, c_v]
         K, V = O.split([self.c_k, self.c_v], dim=3)
-        # -> [N, h, w, c_k + c_s], [N, h, w, c_v + c_s]
+        # -> [N, h, w, num_keys = c_k + c_s], [N, h, w, num_values = c_v + c_s]
         K, V = self.spatial(K), self.spatial(V)
 
         # 2. Prepare all inputs to operate over the T steps.
@@ -100,9 +110,9 @@ class AttentionNet(nn.Module):
         prev_output = core_state[0]
         _, h, w, _ = O.size()
 
-        # [N, h, w, num_keys = c_k + c_s] -> [T, B, h, w, num_keys = c_k + c_s]
+        # [N, h, w, num_keys] -> [T, B, h, w, num_keys]
         K = K.view(T, B, h, w, -1)
-        # [N, h, w, num_values = c_v + c_s] -> [T, B, h, w, num_values = c_v + c_s]
+        # [N, h, w, num_values] -> [T, B, h, w, num_values]
         V = V.view(T, B, h, w, -1)
         # -> [T, B, 1]
         notdone = (1 - inputs["done"].float()).view(T, B, 1)
@@ -142,7 +152,7 @@ class AttentionNet(nn.Module):
             # -> [B, h, w, num_queries]
             A = spatial_softmax(A)
             # [B, h, w, num_queries] x [B, h, w, num_values] -> [B, num_queries, num_values]
-            answers = apply_alpha(A, V_t)
+            answers = apply_attention(A, V_t)
 
             # -> [B, Z = {num_values * num_queries + num_keys * num_queries + 1 + num_actions}]
             chunks = list(
@@ -197,6 +207,7 @@ class AttentionNet(nn.Module):
             dict(policy_logits=policy_logits, baseline=baseline, action=action),
             next_state,
         )
+
 
 class ConvLSTMCell(nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
@@ -345,38 +356,47 @@ class VisionNetwork(nn.Module):
         X = X.view(T, B, C, H, W)
         output_list = []
         notdone = 1 - inputs["done"].float()
+
         # Operating over T:
         for X_t, nd in zip(X.unbind(), notdone.unbind()):
+            # This vector is all 0 if the episode just finished, so it will reset the hidden
+            # state as needed.
             nd = nd.view(B, 1, 1, 1)
             vision_lstm_state = tuple((nd * s) for s in vision_lstm_state)
+
             O_t, vision_state = self.lstm(X_t, vision_lstm_state)
             output_list.append(O_t)
         next_vision_state = vision_state
-        # (T * B, hidden_size)
+        # (T * B, h, w, c)
         O = torch.cat(output_list, dim=0)
         return O, next_vision_state
 
 
 class QueryNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, hidden_size, num_queries, num_keys):
         super(QueryNetwork, self).__init__()
-        # TODO: Add proper non-linearity.
+        # TODO: Check which non-linearity the authors used.
+        # TODO: Check if the last layer should be removed.
+        output_size = num_queries * num_keys  # 72 * 4 = 288
+        self.num_queries, self.num_keys = num_queries, num_keys
         self.model = nn.Sequential(
-            nn.Linear(256, 128),
+            nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(128, 288),
+            nn.Linear(hidden_size // 2, output_size),
             nn.ReLU(),
-            nn.Linear(288, 288),
+            nn.Linear(output_size, output_size),
         )
 
     def forward(self, query):
+        # [N, H] -> [N, num_queries * num_keys]
         out = self.model(query)
-        return out.reshape(-1, 4, 72)
+        # [N, H] -> [N, num_queries, num_keys]
+        return out.view(-1, self.num_queries, self.num_keys)
 
 
 class SpatialBasis:
-    # TODO: Implement Spatial.
     """
+    TODO: Review this function.
     NOTE: The `height` and `weight` depend on the inputs' size and its resulting size
     after being processed by the vision network.
     """
@@ -409,38 +429,59 @@ class SpatialBasis:
 
 
 def spatial_softmax(A):
-    """Softmax over the attention map.
+    r"""Softmax over the attention map.
+
+    Ignoring batches, this operation produces a tensor of the original shape
+    that has been normalized across its "spatial" dimension `h` and `w`.
+
+    .. math::
+    
+        A^q_{h,w} = exp(A^c_{h,w}) / \sum_{h',w'} A^q_{h',w'}
+
+    Thus, each channel is operated upon separately, and no special meaning is 
+    given to the relative position in the image.
     """
-    b, h, w, d = A.size()
+    b, h, w, num_queries = A.size()
     # Flatten A s.t. softmax is applied to each grid (height by width) (not over queries or channels).
-    A = A.reshape(b, h * w, d)
+    A = A.view(b, h * w, num_queries)
     A = F.softmax(A, dim=1)
     # Reshape A back to original shape.
-    A = A.reshape(b, h, w, d)
+    A = A.view(b, h, w, num_queries)
     return A
 
 
-def apply_alpha(A, V):
-    # TODO: Check this function again.
-    b, h, w, c = A.size()
+def apply_attention(A, V):
+    r"""Applies set of attention matrices A over V.
+
+    Ignoring batches the operation produces a tensor of shape [num_queries, num_values]
+    and follows the following equation:
     
-    # [B, h, w, c] -> [B, h * w, c]
-    A = A.reshape(b, h * w, c)
-    # [B, h * w, c] -> [B, c, h * w] 
+    .. math::
+    
+        out_{q,v} = \sum_{h,w} A^q_{h,w} * V^v_{h,w}
+
+    Parameters
+    ----------
+    A : [B, h, w, num_queries] 
+    V : [B, h, w, num_values]
+    --> [B, num_queries, num_values]
+    """
+    b, h, w, num_queries = A.size()
+    num_values = V.size(3)
+
+    # [B, h, w, num_queries] -> [B, h * w, num_queries]
+    A = A.reshape(b, h * w, num_queries)
+    # [B, h * w, num_queries] -> [B, num_queries, h * w]
     A = A.transpose(1, 2)
-
-    d = V.size(3)
-    # [B, h, w, d] -> [B, h * w, d] 
-    V = V.reshape(b, h * w, d)
-
-    # [B, h * w, d] x [B, c, h * w] -> [B, 1, c] 
+    # [B, h, w, num_values] -> [B, h * w, num_values]
+    V = V.reshape(b, h * w, num_values)
+    # [B, h * w, num_values] x [B, num_queries, h * w] -> [B, num_queries, num_values]
     return torch.matmul(A, V)
 
 
-def splice_core_state(state: Tuple):
+def splice_core_state(state: Tuple) -> Tuple:
     return state[0], state[1]
 
 
-def splice_vision_state(state: Tuple):
+def splice_vision_state(state: Tuple) -> Tuple:
     return state[2], state[3]
-
