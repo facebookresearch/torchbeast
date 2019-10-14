@@ -250,7 +250,7 @@ def learn(
         elif flags.reward_clipping == "none":
             clipped_rewards = rewards
 
-        discounts = (1 - batch["done"]).float() * flags.discounting
+        discounts = (~batch["done"]).float() * flags.discounting
 
         vtrace_returns = vtrace.from_logits(
             behavior_policy_logits=batch["policy_logits"],
@@ -286,11 +286,11 @@ def learn(
             "entropy_loss": entropy_loss.item(),
         }
 
-        scheduler.step()
         optimizer.zero_grad()
         total_loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), flags.grad_norm_clipping)
         optimizer.step()
+        scheduler.step()
 
         actor_model.load_state_dict(model.state_dict())
         return stats
@@ -301,7 +301,7 @@ def create_buffers(flags, obs_shape, num_actions) -> Buffers:
     specs = dict(
         frame=dict(size=(T + 1, *obs_shape), dtype=torch.uint8),
         reward=dict(size=(T + 1,), dtype=torch.float32),
-        done=dict(size=(T + 1,), dtype=torch.uint8),
+        done=dict(size=(T + 1,), dtype=torch.bool),
         episode_return=dict(size=(T + 1,), dtype=torch.float32),
         episode_step=dict(size=(T + 1,), dtype=torch.int32),
         policy_logits=dict(size=(T + 1, num_actions), dtype=torch.float32),
@@ -599,7 +599,7 @@ class AtariNet(nn.Module):
         if self.use_lstm:
             core_input = core_input.view(T, B, -1)
             core_output_list = []
-            notdone = 1 - inputs["done"].float()
+            notdone = (~inputs["done"]).float()
             for input, nd in zip(core_input.unbind(), notdone.unbind()):
                 # Reset core state to zero whenever an episode ended.
                 # Make `done` broadcastable with (num_layers, B, hidden_size)

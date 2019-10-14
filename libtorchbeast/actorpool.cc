@@ -492,7 +492,7 @@ class ActorPool {
 
   static TensorNest step_pb_to_nest(rpcenv::Step* step_pb) {
     TensorNest done = TensorNest(
-        torch::full({1, 1}, step_pb->done(), torch::dtype(torch::kUInt8)));
+        torch::full({1, 1}, step_pb->done(), torch::dtype(torch::kBool)));
     TensorNest reward = TensorNest(torch::full({1, 1}, step_pb->reward()));
     TensorNest episode_step = TensorNest(torch::full(
         {1, 1}, step_pb->episode_step(), torch::dtype(torch::kInt32)));
