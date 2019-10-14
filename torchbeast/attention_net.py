@@ -14,6 +14,9 @@ AttentionNet is a pytorch reimpl. of the following paper for the NeurIPS reprodu
   journal={arXiv preprint arXiv:1906.02500},
   year={2019}
 }
+
+TODO:
+1. Review the spatial basis function.
 """
 
 
@@ -33,7 +36,7 @@ class AttentionNet(nn.Module):
 
         NOTE: Because we use TorchBeast and they format the Atari frames to have a different shape (84x84),
         the downstream sizes for some things change compared to the original paper. Mainly, the height
-        and width the resulting keys, querys, values are 17 by 17, not 27 by 20. This may be a good place
+        and width the resulting keys, queries, values are 17 by 17, not 27 by 20. This may be a good place
         to start if we find the results don't replicate.
         """
         super(AttentionNet, self).__init__()
@@ -46,7 +49,7 @@ class AttentionNet(nn.Module):
         self.num_values = c_v + c_s
 
         # This is a function of the CNN hp and the input image size.
-        self.height, self.width = 17, 17
+        self.height, self.width = 27, 20
 
         self.vision = VisionNetwork()
         self.query = QueryNetwork(hidden_size, num_queries, self.num_keys)
@@ -65,13 +68,11 @@ class AttentionNet(nn.Module):
             nn.Linear(hidden_size * 2, hidden_size),
         )
 
-        # self.policy_core = nn.LSTMCell(hidden_size, hidden_size)
         self.policy_core = nn.LSTMCell(hidden_size, hidden_size)
         self.policy_head = nn.Sequential(nn.Linear(hidden_size, num_actions))
         self.values_head = nn.Sequential(nn.Linear(hidden_size, 1))
 
     def initial_state(self, batch_size):
-        # NOTE: Hard-coded values.
         core_zeros = torch.zeros(batch_size, self.hidden_size).float()
         conv_zeros = torch.zeros(
             batch_size, self.hidden_size // 2, self.height, self.width
@@ -91,12 +92,12 @@ class AttentionNet(nn.Module):
         # [T, B, C, H, W].
         X = inputs["frame"]
         T, B, *_ = X.size()
-
         vision_state = splice_vision_state(prev_state)
         # -> [N, c_k+c_v, h, w] where N = T * B.
         O, next_vision_state = self.vision(X, inputs, vision_state)
         # -> [N, h, w, c_k+c_v]
-        O = O.transpose(1, 3)
+        N, c, h, w = O.size()
+        O = O.view(N, h, w, c)
 
         # -> [N, h, w, c_k], [N, h, w, c_v]
         K, V = O.split([self.c_k, self.c_v], dim=3)
@@ -108,7 +109,7 @@ class AttentionNet(nn.Module):
         core_output_list = []
         core_state = splice_core_state(prev_state)
         prev_output = core_state[0]
-        _, h, w, _ = O.size()
+        
 
         # [N, h, w, num_keys] -> [T, B, h, w, num_keys]
         K = K.view(T, B, h, w, -1)
@@ -343,14 +344,16 @@ class VisionNetwork(nn.Module):
     def __init__(self):
         super(VisionNetwork, self).__init__()
         self.cnn = nn.Sequential(
-            nn.Conv2d(in_channels=4, out_channels=32, kernel_size=8, stride=4),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(4, 4), stride=1),
+            # NOTE: The padding choices were not in the paper details, but result in the sizes
+            # mentioned by the authors. We should review these.
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=8, stride=4, padding=1),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=2),
         )
         self.lstm = ConvLSTMCell(input_channels=64, hidden_channels=128, kernel_size=3)
 
     def forward(self, X, inputs, vision_lstm_state):
         T, B, *_ = X.size()
-        X = torch.flatten(X, 0, 1).float() / 255.0
+        X = torch.flatten(X, 0, 1).float()
         X = self.cnn(X)
         _, C, H, W = X.size()
         X = X.view(T, B, C, H, W)
@@ -401,7 +404,7 @@ class SpatialBasis:
     after being processed by the vision network.
     """
 
-    def __init__(self, height=17, width=17, channels=64):
+    def __init__(self, height=27, width=20, channels=64):
         h, w, d = height, width, channels
 
         p_h = torch.mul(

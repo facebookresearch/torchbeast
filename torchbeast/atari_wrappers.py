@@ -288,8 +288,6 @@ class LazyFrames(object):
 
 def make_atari(env_id, max_episode_steps=None):
     env = gym.make(env_id)
-    # TODO: Seaquest frame skips.
-    # assert 'NoFrameskip' in env.spec.id
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
 
@@ -304,6 +302,7 @@ def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, 
         env = EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
+    # NOTE: This warps the environment to 84 by 84 frames.
     env = WarpFrame(env)
     if scale:
         env = ScaledFloatFrame(env)
@@ -311,6 +310,16 @@ def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, 
         env = ClipRewardEnv(env)
     if frame_stack:
         env = FrameStack(env, 4)
+    return env
+
+
+def wrap_interp(env, frame_stack=True):
+    """Configure environment for interp. Atari.
+    """
+    if 'FIRE' in env.unwrapped.get_action_meanings():
+        env = FireResetEnv(env)
+    if frame_stack:
+        env = MaxAndSkipEnv(env, 4)
     return env
 
 

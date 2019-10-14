@@ -208,7 +208,7 @@ def get_batch(
     batch = {
         key: torch.stack([buffers[key][m] for m in indices], dim=1) for key in buffers
     }
-    # TODO: AttentionNet is batch first.
+    # NOTE: AttentionNet is batch first.
     initial_agent_state = tuple(
         torch.cat(ts, dim=0)
         for ts in zip(*[initial_agent_state_buffers[m] for m in indices])
@@ -637,13 +637,21 @@ class AtariNet(nn.Module):
 Net = attention_net.AttentionNet
 
 
-def create_env(flags):
+def create_deepmind_env(flags):
     return atari_wrappers.wrap_pytorch(
         atari_wrappers.wrap_deepmind(
             atari_wrappers.make_atari(flags.env),
             clip_rewards=False,
             frame_stack=True,
             scale=False,
+        )
+    )
+
+
+def create_env(flags):
+    return atari_wrappers.wrap_pytorch(
+        atari_wrappers.wrap_interp(
+            atari_wrappers.make_atari(flags.env),
         )
     )
 
