@@ -17,6 +17,7 @@ AttentionNet is a pytorch reimpl. of the following paper for the NeurIPS reprodu
 
 TODO:
 1. Review the spatial basis function.
+2. Review MLP. How many non-lin in an N-layered MLP?
 """
 
 
