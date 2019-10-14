@@ -142,7 +142,7 @@ class build_ext(cpp_extension.BuildExtension):
 setuptools.setup(
     name="libtorchbeast",
     packages=["libtorchbeast"],
-    version="0.0.12",
+    version="0.0.13",
     author="TorchBeast team",
     ext_modules=[actorpool, rpcenv],
     cmdclass={"build_ext": build_ext},
