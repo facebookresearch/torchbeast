@@ -111,7 +111,6 @@ class AttentionNet(nn.Module):
         core_state = splice_core_state(prev_state)
         prev_output = core_state[0]
         
-
         # [N, h, w, num_keys] -> [T, B, h, w, num_keys]
         K = K.view(T, B, h, w, -1)
         # [N, h, w, num_values] -> [T, B, h, w, num_values]
@@ -347,8 +346,8 @@ class VisionNetwork(nn.Module):
         self.cnn = nn.Sequential(
             # NOTE: The padding choices were not in the paper details, but result in the sizes
             # mentioned by the authors. We should review these.
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=8, stride=4, padding=1),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=2),
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=8, stride=4, padding=(1,2)),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=(2,1)),
         )
         self.lstm = ConvLSTMCell(input_channels=64, hidden_channels=128, kernel_size=3)
 
