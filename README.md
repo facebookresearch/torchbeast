@@ -9,7 +9,7 @@ TorchBeast comes in two variants:
 [PolyBeast](#faster-version-polybeast). While
 PolyBeast is more powerful (e.g. allowing training across machines),
 it's somewhat harder to install. MonoBeast requires only Python and
-PyTorch.
+PyTorch (we suggest using PyTorch version 1.2 or newer).
 
 For further details, see our [paper](https://arxiv.org/abs/1910.03552).
 
