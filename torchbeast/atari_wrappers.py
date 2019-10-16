@@ -194,10 +194,9 @@ class WarpFrame(gym.ObservationWrapper):
 
         if self._grayscale:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        frame = cv2.resize(
-            frame, (self._width, self._height), interpolation=cv2.INTER_AREA
-        )
-        if self._grayscale:
+            frame = cv2.resize(
+                frame, (self._width, self._height), interpolation=cv2.INTER_AREA
+            )
             frame = np.expand_dims(frame, -1)
 
         if self._key is None:
