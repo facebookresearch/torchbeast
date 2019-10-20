@@ -46,7 +46,7 @@ class Env:
         return frame, 0.0, False, {}  # First three mandatory.
 
 
-def create_env(env_name, lock=threading.Lock()):
+def create_env_orig(env_name, lock=threading.Lock()):
     with lock:  # Atari isn't threadsafe at construction time.
         return atari_wrappers.wrap_pytorch(
             atari_wrappers.wrap_deepmind(
@@ -57,6 +57,13 @@ def create_env(env_name, lock=threading.Lock()):
             )
         )
 
+def create_env(env_name, lock=threading.Lock()):
+    with lock:  # Atari isn't threadsafe at construction time.
+        return atari_wrappers.wrap_pytorch(
+            atari_wrappers.wrap_interp(
+                atari_wrappers.make_atari(flags.env),
+            )
+        )
 
 def serve(env_name, server_address):
     init = Env if env_name == "Mock" else lambda: create_env(env_name)

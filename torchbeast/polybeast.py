@@ -33,6 +33,7 @@ from torch.nn import functional as F
 from torchbeast.core import file_writer
 from torchbeast.core import vtrace
 
+from torchbeast.attention_net_poly import AttentionNet
 
 # yapf: disable
 parser = argparse.ArgumentParser(description="PyTorch Scalable Agent")
@@ -138,7 +139,7 @@ def compute_policy_gradient_loss(logits, actions, advantages):
     return torch.sum(cross_entropy * advantages.detach())
 
 
-class Net(nn.Module):
+class OrigNet(nn.Module):
     def __init__(self, num_actions, use_lstm=False):
         super(Net, self).__init__()
         self.num_actions = num_actions
@@ -272,6 +273,7 @@ class Net(nn.Module):
 
         return (action, policy_logits, baseline), core_state
 
+Net = AttentionNet
 
 def inference(flags, inference_batcher, model, lock=threading.Lock()):  # noqa: B008
     with torch.no_grad():

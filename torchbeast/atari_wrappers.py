@@ -318,8 +318,9 @@ def wrap_interp(env, frame_stack=True):
     """
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
-    if frame_stack:
-        env = MaxAndSkipEnv(env, 4)
+    # TODO: wrap_interp. repeated `MaxAndSkipEnv`.
+    # if frame_stack:
+    #     env = MaxAndSkipEnv(env, 4)
     return env
 
 
