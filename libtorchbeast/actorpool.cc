@@ -49,10 +49,9 @@ typedef nest::Nest<torch::Tensor> TensorNest;
 TensorNest batch(const std::vector<TensorNest>& tensors, int64_t batch_dim) {
   // TODO(heiner): Consider using accessors and writing slices ourselves.
   nest::Nest<std::vector<torch::Tensor>> zipped = TensorNest::zip(tensors);
-  return zipped.map(
-      [batch_dim](const std::vector<torch::Tensor>& v) {
-        return torch::cat(v, batch_dim);
-      });
+  return zipped.map([batch_dim](const std::vector<torch::Tensor>& v) {
+    return torch::cat(v, batch_dim);
+  });
 }
 
 struct ClosedBatchingQueue : public std::runtime_error {
@@ -394,7 +393,8 @@ class ActorPool {
     }
     if (all_agent_outputs.get_vector().size() != 2) {
       throw py::value_error(
-          "Expected agent output to be ((action, ...), new_state) but got sequence of "
+          "Expected agent output to be ((action, ...), new_state) but got "
+          "sequence of "
           "length " +
           std::to_string(all_agent_outputs.get_vector().size()));
     }
@@ -402,7 +402,7 @@ class ActorPool {
     TensorNest agent_outputs = all_agent_outputs.get_vector()[0];
     if (!agent_outputs.is_vector()) {
       throw py::value_error(
-        "Expected first entry of agent output to be a (action, ...) tuple");
+          "Expected first entry of agent output to be a (action, ...) tuple");
     }
 
     TensorNest last(std::vector({env_outputs, agent_outputs}));
@@ -442,8 +442,8 @@ class ActorPool {
         }
         last = rollout.back();
         learner_queue_->enqueue({
-            TensorNest(std::vector({batch(rollout, 0),
-                                    std::move(initial_agent_state)})),
+            TensorNest(std::vector(
+                {batch(rollout, 0), std::move(initial_agent_state)})),
         });
         rollout.clear();
         initial_agent_state = agent_state;  // Copy
@@ -492,7 +492,7 @@ class ActorPool {
 
   static TensorNest step_pb_to_nest(rpcenv::Step* step_pb) {
     TensorNest done = TensorNest(
-        torch::full({1, 1}, step_pb->done(), torch::dtype(torch::kUInt8)));
+        torch::full({1, 1}, step_pb->done(), torch::dtype(torch::kBool)));
     TensorNest reward = TensorNest(torch::full({1, 1}, step_pb->reward()));
     TensorNest episode_step = TensorNest(torch::full(
         {1, 1}, step_pb->episode_step(), torch::dtype(torch::kInt32)));

@@ -245,7 +245,7 @@ class OrigNet(nn.Module):
         if self.use_lstm:
             core_input = core_input.view(T, B, -1)
             core_output_list = []
-            notdone = (1 - inputs["done"]).float()
+            notdone = (~inputs["done"]).float()
             for input, nd in zip(core_input.unbind(), notdone.unbind()):
                 # Reset core state to zero whenever an episode ended.
                 # Make `done` broadcastable with (num_layers, B, hidden_size)
@@ -343,7 +343,7 @@ def learn(
         elif flags.reward_clipping == "none":
             clipped_rewards = env_outputs.rewards
 
-        discounts = (1 - env_outputs.done).float() * flags.discounting
+        discounts = (~env_outputs.done).float() * flags.discounting
 
         vtrace_returns = vtrace.from_logits(
             behavior_policy_logits=actor_outputs.policy_logits,
@@ -369,11 +369,11 @@ def learn(
 
         total_loss = pg_loss + baseline_loss + entropy_loss
 
-        scheduler.step()
         optimizer.zero_grad()
         total_loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), flags.grad_norm_clipping)
         optimizer.step()
+        scheduler.step()
 
         actor_model.load_state_dict(model.state_dict())
 

@@ -63,6 +63,8 @@ class ContiguousArraysTest(unittest.TestCase):
         self.assertTrue(np.array_equal(frame.shape, (1, 1, 5, 4, 3)))
         frame = frame.reshape(5, 4, 3)
         self.assertTrue(np.array_equal(frame, self.target))
+        # Set an arbitrary output.
+        batch.set_outputs(((torch.ones(1, 1),), ()))
 
     def test_contiguous_arrays(self):
         self.check_inference_inputs()

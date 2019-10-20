@@ -17,8 +17,6 @@ import unittest
 import threading
 import subprocess
 
-import numpy as np
-
 import torch
 from torch import nn
 
@@ -34,7 +32,7 @@ class Net(nn.Module):
 
     def forward(self, inputs, core_state):
         x = inputs["frame"]
-        notdone = (1 - inputs["done"]).float()
+        notdone = (~inputs["done"]).float()
         T, B, *_ = x.shape
 
         for nd in notdone.unbind():
