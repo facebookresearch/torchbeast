@@ -58,7 +58,7 @@ ENV BASH_ENV /root/.bashrc
 # # RUN pip download torch
 # # RUN pip install torch*.whl
 
-RUN git clone --recursive https://github.com/pytorch/pytorch
+RUN git clone --single-branch --branch v1.2.0 --recursive https://github.com/pytorch/pytorch
 
 WORKDIR /src/pytorch
 
@@ -72,11 +72,6 @@ WORKDIR /src/torchbeast
 COPY .git /src/torchbeast/.git
 
 RUN git reset --hard
-
-# Collect github public key.
-RUN mkdir /root/.ssh/
-
-RUN ssh-keyscan github.com > /root/.ssh/known_hosts
 
 # Collect and install grpc.
 RUN git submodule update --init --recursive
