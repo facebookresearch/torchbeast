@@ -525,10 +525,16 @@ def test(flags, num_episodes: int = 10):
     observation = env.initial()
     returns = []
 
+    video_frames = []
+    attention_frames = []
+
+    hidden_state = model.initial_state(batch_size=1)
+
     while len(returns) < num_episodes:
         if flags.mode == "test_render":
             env.gym_env.render()
-        agent_outputs = model(observation)
+        agent_outputs, new_hidden_state = model(observation, hidden_state)
+        hidden_state = new_hidden_state
         policy_outputs, _ = agent_outputs
         observation = env.step(policy_outputs["action"])
         if observation["done"].item():
@@ -538,6 +544,17 @@ def test(flags, num_episodes: int = 10):
                 observation["episode_step"].item(),
                 observation["episode_return"].item(),
             )
+            hidden_state = model.initial_state(batch_size=1)
+
+    if flags.mode == "write_videos":
+        # Save numpy arrays, so we can make videos somewhere else.
+        video_frames = np.asarray(video_frames)
+        with open(videopath, "wb") as f:
+            np.save(f, video_frames)
+        attention_frames = np.asarray(attention_frames)
+        with open(attentionpath, "wb") as f:
+            np.save(f, attention_frames)
+
     env.close()
     logging.info(
         "Average returns over %i steps: %.1f", num_episodes, sum(returns) / len(returns)

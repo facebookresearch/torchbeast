@@ -116,7 +116,7 @@ class AttentionNet(nn.Module):
         # [N, h, w, num_values] -> [T, B, h, w, num_values]
         V = V.view(T, B, h, w, -1)
         # -> [T, B, 1]
-        notdone = (~inputs["done"].float()).view(T, B, 1)
+        notdone = (~inputs["done"]).float().view(T, B, 1)
         # -> [T, B, 1, num_actions]
         prev_action = (
             F.one_hot(inputs["last_action"].view(T * B), self.num_actions)
