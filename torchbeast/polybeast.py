@@ -452,10 +452,10 @@ def train(flags):
                 break
         pipe_id += 1
 
-    model = Net(num_actions=flags.num_actions, use_lstm=flags.use_lstm)
+    model = Net(num_actions=flags.num_actions)
     model = model.to(device=flags.learner_device)
 
-    actor_model = Net(num_actions=flags.num_actions, use_lstm=flags.use_lstm)
+    actor_model = Net(num_actions=flags.num_actions)
     actor_model.to(device=flags.actor_device)
 
     # The ActorPool that will run `flags.num_actors` many loops.
@@ -464,7 +464,7 @@ def train(flags):
         learner_queue=learner_queue,
         inference_batcher=inference_batcher,
         env_server_addresses=addresses,
-        initial_agent_state=actor_model.initial_state(),
+        initial_agent_state=actor_model.initial_state(batch_size=1),
     )
 
     def run():

@@ -20,9 +20,7 @@ AttentionNet is a pytorch reimpl. of the following paper for the NeurIPS reprodu
 class AttentionNet(nn.Module):
     def __init__(
         self,
-        __obseravation_num_channels: int,
         num_actions: int,
-        __use_lstm: bool,
         hidden_size: int = 256,
         c_v: int = 120,
         c_k: int = 8,
