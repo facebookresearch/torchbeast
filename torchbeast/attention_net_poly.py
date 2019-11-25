@@ -55,8 +55,8 @@ class AttentionNet(nn.Module):
             nn.Linear(
                 self.num_values * num_queries
                 + self.num_keys * num_queries
-                + 1
-                + self.num_actions,
+                + 1,
+                # NOTE: libtorch does not support last_action, so rm `+ self.num_actions`
                 hidden_size * 2,  # 512, HP from the authors.
             ),
             nn.ReLU(),
@@ -112,11 +112,12 @@ class AttentionNet(nn.Module):
         # -> [T, B, 1]
         notdone = (~inputs["done"]).float().view(T, B, 1)
         # -> [T, B, 1, num_actions]
-        prev_action = (
-            F.one_hot(inputs["last_action"].view(T * B), self.num_actions)
-            .view(T, B, 1, self.num_actions)
-            .float()
-        )
+        # NOTE: libtorchbeast does not support last_action.
+        # prev_action = (
+        #     F.one_hot(inputs["last_action"].view(T * B), self.num_actions)
+        #     .view(T, B, 1, self.num_actions)
+        #     .float()
+        # )
         # -> [T, B, 1, 1]
         prev_reward = torch.clamp(inputs["reward"], -1, 1).view(T, B, 1, 1)
 
@@ -124,11 +125,11 @@ class AttentionNet(nn.Module):
         # ---------------------------------
         # NOTE: T = 1 when 'act'ing and T > 1 when 'learn'ing.
 
-        for K_t, V_t, prev_reward_t, prev_action_t, nd_t in zip(
+        for K_t, V_t, prev_reward_t, nd_t in zip( # prev_action_t
             K.unbind(),
             V.unbind(),
             prev_reward.unbind(),
-            prev_action.unbind(),
+            # prev_action.unbind(),
             notdone.unbind(),
         ):
 
@@ -153,7 +154,7 @@ class AttentionNet(nn.Module):
             chunks = list(
                 torch.chunk(answers, self.num_queries, dim=1)
                 + torch.chunk(Q_t, self.num_queries, dim=1)
-                + (prev_reward_t.float(), prev_action_t.float())
+                + (prev_reward_t.float())
             )
             answer = torch.cat(chunks, dim=2).squeeze(1)
             # [B, Z] -> [B, hidden_size]
