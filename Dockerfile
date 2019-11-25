@@ -93,8 +93,8 @@ ENV OMP_NUM_THREADS 1
 
 # Run.
 CMD ["bash", "-c", "python -m torchbeast.polybeast \
-       --num_actors 10 \
-       --total_steps 200000000 \
+       --num_actors 4 \
+       --total_steps 2000 \
        --unroll_length 60 --batch_size 32"]
 
 

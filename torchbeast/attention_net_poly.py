@@ -154,7 +154,7 @@ class AttentionNet(nn.Module):
             chunks = list(
                 torch.chunk(answers, self.num_queries, dim=1)
                 + torch.chunk(Q_t, self.num_queries, dim=1)
-                + (prev_reward_t.float())
+                + (prev_reward_t.float(),)
             )
             answer = torch.cat(chunks, dim=2).squeeze(1)
             # [B, Z] -> [B, hidden_size]
