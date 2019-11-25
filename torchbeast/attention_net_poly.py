@@ -211,7 +211,7 @@ class AttentionNet(nn.Module):
 
         # NOTE: We add an empty dimension to each state matrix in order
         # to align our API with PolyBeast dynamic batching.
-        next_state = tuple(s.squeeze(0) for s in next_state)
+        next_state = tuple(s.unsqueeze(0) for s in next_state)
 
         # NOTE: Polybeast changes the output format to a tuple.
         return (action, policy_logits, baseline), next_state
