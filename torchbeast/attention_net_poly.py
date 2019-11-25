@@ -201,9 +201,7 @@ class AttentionNet(nn.Module):
         next_state = next_core_state + next_vision_state
 
         # NOTE: Polybeast changes the output format to a tuple.
-        return tuple(
-            (action, policy_logits, baseline), next_state,
-        )
+        return (action, policy_logits, baseline), next_state
 
 
 class ConvLSTMCell(nn.Module):
