@@ -439,7 +439,7 @@ def train(flags):
         minimum_batch_size=1,
         maximum_batch_size=512,
         timeout_ms=100,
-        check_outputs=True,
+        check_outputs=False,
     )
 
     addresses = []
