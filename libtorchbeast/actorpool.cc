@@ -255,13 +255,14 @@ class DynamicBatcher {
             throw py::value_error(ss.str());
           }
           if (tensor.sizes()[batch_dim_] != expected_batch_size) {
-            throw py::value_error(
-                "Output shape must have the same batch "
-                "dimension as the input batch size. Expected: " +
-                std::to_string(expected_batch_size) +
-                ". Observed: " + std::to_string(tensor.sizes()[batch_dim_]) +
-                std::to_string(batch_dim_) + " " + std::to_string(tensor.dim()) + " " + std::to_string(tensor.sizes())
-                );
+            std::stringstream ss;
+            ss << "With batch dimension " << batch_dim_
+               << ", output shape must have at least " << batch_dim_ + 1
+               << " dimensions, and got " << tensor.sizes()
+               << "Output shape must have the same batch "
+               << "dimension as the input batch size. Expected: "
+               << expected_batch_size << ". Observed: " << tensor.sizes()[batch_dim_];
+            throw py::value_error(ss.str());
           }
         });
       }
