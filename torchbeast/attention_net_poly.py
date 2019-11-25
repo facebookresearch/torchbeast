@@ -200,9 +200,10 @@ class AttentionNet(nn.Module):
 
         # Create tuple of next states.
         next_state = next_core_state + next_vision_state
-        return (
-            dict(policy_logits=policy_logits, baseline=baseline, action=action),
-            next_state,
+
+        # NOTE: Polybeast changes the output format to a tuple.
+        return tuple(
+            (action, policy_logits, baseline), next_state,
         )
 
 
