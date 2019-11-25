@@ -259,7 +259,9 @@ class DynamicBatcher {
                 "Output shape must have the same batch "
                 "dimension as the input batch size. Expected: " +
                 std::to_string(expected_batch_size) +
-                ". Observed: " + std::to_string(tensor.sizes()[batch_dim_]));
+                ". Observed: " + std::to_string(tensor.sizes()[batch_dim_]) +
+                std::to_string(batch_dim_) + " " + std::to_string(tensor.dim()) + " " + std::to_string(tensor.sizes())
+                );
           }
         });
       }
