@@ -91,12 +91,25 @@ RUN python setup.py install
 
 ENV OMP_NUM_THREADS 1
 
-# Run.
+# Small Run.
 CMD ["bash", "-c", "python -m torchbeast.polybeast \
-       --num_actors 4 \
-       --total_steps 2000 \
-       --unroll_length 60 --batch_size 32"]
+       --num_actors 10 \
+       --total_steps 2_000 \
+       --learning_rate 0.0002 \
+       --grad_norm_clipping 1280 \
+       --epsilon 0.01 \
+       --entropy_cost 0.01 \
+       --unroll_length 50 --batch_size 32"]
 
+# # Final Run.
+# CMD ["bash", "-c", "python -m torchbeast.polybeast \
+#        --num_actors 10 \
+#        --total_steps 2_000_000_000 \
+#        --learning_rate 0.0002 \
+#        --grad_norm_clipping 1280 \
+#        --epsilon 0.01 \
+#        --entropy_cost 0.01 \
+#        --unroll_length 50 --batch_size 32"]
 
 # Docker commands:
 #   docker rm torchbeast -v
