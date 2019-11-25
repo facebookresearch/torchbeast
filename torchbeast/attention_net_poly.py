@@ -68,10 +68,15 @@ class AttentionNet(nn.Module):
         self.values_head = nn.Sequential(nn.Linear(hidden_size, 1))
 
     def initial_state(self, batch_size):
-        core_zeros = torch.zeros(batch_size, self.hidden_size).float()
+        # NOTE: We add an empty dimension to each state matrix in order
+        # to align our API with PolyBeast dynamic batching.
+        core_zeros = torch.zeros(
+            batch_size, 
+            self.hidden_size
+        ).float().unsqueeze(0)
         conv_zeros = torch.zeros(
             batch_size, self.hidden_size // 2, self.height, self.width
-        ).float()
+        ).float().unsqueeze(0)
         return (
             core_zeros.clone(),  # hidden for policy core
             core_zeros.clone(),  # cell for policy core
@@ -80,6 +85,10 @@ class AttentionNet(nn.Module):
         )
 
     def forward(self, inputs, prev_state):
+        # NOTE: We add an empty dimension to each state matrix in order
+        # to align our API with PolyBeast dynamic batching.
+        # Here we squeeze that dimension out. (We will unsqueeze output as well.)
+        prev_state = tuple(s.squeeze(0) for s in prev_state)
 
         # 1 (a). Vision.
         # --------------
@@ -199,6 +208,10 @@ class AttentionNet(nn.Module):
 
         # Create tuple of next states.
         next_state = next_core_state + next_vision_state
+
+        # NOTE: We add an empty dimension to each state matrix in order
+        # to align our API with PolyBeast dynamic batching.
+        next_state = tuple(s.squeeze(0) for s in next_state)
 
         # NOTE: Polybeast changes the output format to a tuple.
         return (action, policy_logits, baseline), next_state
