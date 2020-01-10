@@ -169,7 +169,7 @@ To start both the environment servers and the learner process, run
 $ python -m torchbeast.polybeast
 ```
 
-The environment servers can also be started separately:
+The environment servers and the learner process can also be started separately:
 
 ```shell
 python -m torchbeast.polybeast_env --num_servers 10
@@ -178,7 +178,7 @@ python -m torchbeast.polybeast_env --num_servers 10
 Start another terminal and run:
 
 ```shell
-$ python -m torchbeast.polybeast --no_start_servers
+$ python3 -m torchbeast.polybeast_learner
 ```
 
 
