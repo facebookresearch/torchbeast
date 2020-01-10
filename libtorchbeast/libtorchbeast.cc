@@ -21,7 +21,7 @@ namespace py = pybind11;
 void init_actorpool(py::module &);
 void init_rpcenv(py::module &);
 
-PYBIND11_MODULE(libtorchbeast, m) {
+PYBIND11_MODULE(_C, m) {
   init_actorpool(m);
   init_rpcenv(m);
 }

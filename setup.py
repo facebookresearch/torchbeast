@@ -111,7 +111,7 @@ def main():
     grpc_objects.append(f"{PREFIX}/lib/libprotobuf.a")
 
     libtorchbeast = cpp_extension.CppExtension(
-        name="libtorchbeast",
+        name="libtorchbeast._C",
         sources=[
             "libtorchbeast/libtorchbeast.cc",
             "libtorchbeast/actorpool.cc",
