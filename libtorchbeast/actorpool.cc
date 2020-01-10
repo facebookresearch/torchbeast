@@ -563,7 +563,7 @@ class ActorPool {
   TensorNest initial_agent_state_;
 };
 
-PYBIND11_MODULE(actorpool, m) {
+void init_actorpool(py::module& m) {
   py::register_exception<std::future_error>(m, "AsyncError");
   py::register_exception<ClosedBatchingQueue>(m, "ClosedBatchingQueue");
   py::register_exception<std::bad_variant_access>(m, "NestError");

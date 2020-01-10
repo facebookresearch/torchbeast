@@ -19,7 +19,8 @@ import threading
 import time
 
 import numpy as np
-from libtorchbeast import rpcenv
+import torch  # Necessary for importing libtorchbeast.
+import libtorchbeast
 from torchbeast import atari_wrappers
 
 
@@ -60,13 +61,11 @@ def create_env(env_name, lock=threading.Lock()):
 
 def serve(env_name, server_address):
     init = Env if env_name == "Mock" else lambda: create_env(env_name)
-    server = rpcenv.Server(init, server_address=server_address)
+    server = libtorchbeast.Server(init, server_address=server_address)
     server.run()
 
 
-if __name__ == "__main__":
-    flags = parser.parse_args()
-
+def main(flags):
     if not flags.pipes_basename.startswith("unix:"):
         raise Exception("--pipes_basename has to be of the form unix:/some/path.")
 
@@ -84,3 +83,8 @@ if __name__ == "__main__":
             time.sleep(10)
     except KeyboardInterrupt:
         pass
+
+
+if __name__ == "__main__":
+    flags = parser.parse_args()
+    main(flags)
