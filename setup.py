@@ -61,7 +61,7 @@ def build_pb():
         subprocess.call(
             protoc + " --grpc_out=libtorchbeast -Ilibtorchbeast"
             " --plugin=protoc-gen-grpc=`which grpc_cpp_plugin`"
-            " rpc.proto",
+            " rpcenv.proto",
             shell=True,
         )
         != 0
