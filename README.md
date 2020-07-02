@@ -246,8 +246,8 @@ pybind11.
 `third_party`: Collection of third-party dependencies as Git
 submodules. Includes [gRPC](https://grpc.io/).
 
-`torchbeast`: Contains `monobeast.py`, and `polybeast.py` and
-`polybeast_env.py`.
+`torchbeast`: Contains `monobeast.py`, and `polybeast.py`,
+`polybeast_learner.py` and `polybeast_env.py`.
 
 
 ## Hyperparamaters

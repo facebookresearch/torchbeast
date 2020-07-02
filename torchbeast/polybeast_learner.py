@@ -16,15 +16,10 @@ import argparse
 import collections
 import logging
 import os
-import signal
-import subprocess
 import threading
 import time
 import timeit
 import traceback
-
-# Necessary for multithreading.
-os.environ["OMP_NUM_THREADS"] = "1"  # noqa: E402
 
 import nest
 import torch
@@ -33,6 +28,10 @@ from torch import nn
 from torch.nn import functional as F
 from torchbeast.core import file_writer
 from torchbeast.core import vtrace
+
+
+# Necessary for multithreading.
+os.environ["OMP_NUM_THREADS"] = "1"
 
 
 # yapf: disable
