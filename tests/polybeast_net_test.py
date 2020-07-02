@@ -16,7 +16,7 @@
 import unittest
 
 import torch
-from torchbeast import polybeast
+from torchbeast import polybeast_learner as polybeast
 
 
 class NetTest(unittest.TestCase):

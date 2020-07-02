@@ -19,7 +19,7 @@ import unittest
 
 import numpy as np
 import torch
-from libtorchbeast import actorpool
+import libtorchbeast
 
 
 _BROKEN_PROMISE_MESSAGE = (
@@ -30,7 +30,7 @@ _BROKEN_PROMISE_MESSAGE = (
 
 class DynamicBatcherTest(unittest.TestCase):
     def test_simple_run(self):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0, minimum_batch_size=1, maximum_batch_size=1
         )
 
@@ -51,7 +51,7 @@ class DynamicBatcherTest(unittest.TestCase):
 
     def test_timeout(self):
         timeout_ms = 300
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0,
             minimum_batch_size=5,
             maximum_batch_size=5,
@@ -80,7 +80,7 @@ class DynamicBatcherTest(unittest.TestCase):
         self.assertTrue(timeout_ms <= waiting_time_ms <= timeout_ms + timeout_ms / 10)
 
     def test_batched_run(self, batch_size=10):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0, minimum_batch_size=batch_size, maximum_batch_size=batch_size
         )
 
@@ -115,14 +115,16 @@ class DynamicBatcherTest(unittest.TestCase):
             t.join()
 
     def test_dropped_batch(self):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0, minimum_batch_size=1, maximum_batch_size=1
         )
 
         inputs = torch.zeros(1, 2, 3)
 
         def target():
-            with self.assertRaisesRegex(actorpool.AsyncError, _BROKEN_PROMISE_MESSAGE):
+            with self.assertRaisesRegex(
+                libtorchbeast.AsyncError, _BROKEN_PROMISE_MESSAGE
+            ):
                 batcher.compute(inputs)
 
         t = threading.Thread(target=target, name="compute-thread")
@@ -132,7 +134,7 @@ class DynamicBatcherTest(unittest.TestCase):
         t.join()
 
     def test_check_outputs1(self):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=2, minimum_batch_size=1, maximum_batch_size=1
         )
 
@@ -155,7 +157,7 @@ class DynamicBatcherTest(unittest.TestCase):
         t.join()
 
     def test_check_outputs2(self):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=2, minimum_batch_size=1, maximum_batch_size=1
         )
 
@@ -181,7 +183,7 @@ class DynamicBatcherTest(unittest.TestCase):
         t.join()
 
     def test_multiple_set_outputs_calls(self):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0, minimum_batch_size=1, maximum_batch_size=1
         )
 
@@ -210,7 +212,7 @@ class DynamicBatcherProducerConsumerTest(unittest.TestCase):
         repeats=100,
         consume_thread_number=16,
     ):
-        batcher = actorpool.DynamicBatcher(
+        batcher = libtorchbeast.DynamicBatcher(
             batch_dim=0, minimum_batch_size=minimum_batch_size
         )
 

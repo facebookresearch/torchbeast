@@ -20,7 +20,7 @@ import subprocess
 import torch
 from torch import nn
 
-from libtorchbeast import actorpool
+import libtorchbeast
 
 
 class Net(nn.Module):
@@ -52,20 +52,20 @@ class CoreAgentStateTest(unittest.TestCase):
         self.T = 3
         self.model = Net()
         server_address = ["unix:/tmp/core_agent_state_test"]
-        self.learner_queue = actorpool.BatchingQueue(
+        self.learner_queue = libtorchbeast.BatchingQueue(
             batch_dim=1,
             minimum_batch_size=self.B,
             maximum_batch_size=self.B,
             check_inputs=True,
         )
-        self.inference_batcher = actorpool.DynamicBatcher(
+        self.inference_batcher = libtorchbeast.DynamicBatcher(
             batch_dim=1,
             minimum_batch_size=1,
             maximum_batch_size=1,
             timeout_ms=100,
             check_outputs=True,
         )
-        self.actor = actorpool.ActorPool(
+        self.actor = libtorchbeast.ActorPool(
             unroll_length=self.T,
             learner_queue=self.learner_queue,
             inference_batcher=self.inference_batcher,

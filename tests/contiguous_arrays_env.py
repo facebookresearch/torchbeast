@@ -14,7 +14,7 @@
 """Mock environment for the test contiguous_arrays_test.py."""
 
 import numpy as np
-from libtorchbeast import rpcenv
+import libtorchbeast
 
 
 class Env:
@@ -33,5 +33,5 @@ class Env:
 
 if __name__ == "__main__":
     server_address = "unix:/tmp/contiguous_arrays_test"
-    server = rpcenv.Server(Env, server_address=server_address)
+    server = libtorchbeast.Server(Env, server_address=server_address)
     server.run()

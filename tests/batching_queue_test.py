@@ -22,31 +22,31 @@ import unittest
 
 import numpy as np
 import torch
-from libtorchbeast import actorpool
+import libtorchbeast
 
 
 class BatchingQueueTest(unittest.TestCase):
     def test_bad_construct(self):
         with self.assertRaisesRegex(ValueError, "Min batch size must be >= 1"):
-            actorpool.BatchingQueue(
+            libtorchbeast.BatchingQueue(
                 batch_dim=3, minimum_batch_size=0, maximum_batch_size=1
             )
 
         with self.assertRaisesRegex(
             ValueError, "Max batch size must be >= min batch size"
         ):
-            actorpool.BatchingQueue(
+            libtorchbeast.BatchingQueue(
                 batch_dim=3, minimum_batch_size=1, maximum_batch_size=0
             )
 
     def test_multiple_close_calls(self):
-        queue = actorpool.BatchingQueue()
+        queue = libtorchbeast.BatchingQueue()
         queue.close()
         with self.assertRaisesRegex(RuntimeError, "Queue was closed already"):
             queue.close()
 
     def test_check_inputs(self):
-        queue = actorpool.BatchingQueue(batch_dim=2)
+        queue = libtorchbeast.BatchingQueue(batch_dim=2)
         with self.assertRaisesRegex(
             ValueError, "Enqueued tensors must have more than batch_dim =="
         ):
@@ -56,13 +56,13 @@ class BatchingQueueTest(unittest.TestCase):
         ):
             queue.enqueue([])
         with self.assertRaisesRegex(
-            actorpool.ClosedBatchingQueue, "Enqueue to closed queue"
+            libtorchbeast.ClosedBatchingQueue, "Enqueue to closed queue"
         ):
             queue.close()
             queue.enqueue(torch.ones(1, 1, 1))
 
     def test_simple_run(self):
-        queue = actorpool.BatchingQueue(
+        queue = libtorchbeast.BatchingQueue(
             batch_dim=0, minimum_batch_size=1, maximum_batch_size=1
         )
 
@@ -72,7 +72,7 @@ class BatchingQueueTest(unittest.TestCase):
         np.testing.assert_array_equal(batch, inputs)
 
     def test_batched_run(self, batch_size=2):
-        queue = actorpool.BatchingQueue(
+        queue = libtorchbeast.BatchingQueue(
             batch_dim=0, minimum_batch_size=batch_size, maximum_batch_size=batch_size
         )
 
@@ -106,7 +106,7 @@ class BatchingQueueProducerConsumerTest(unittest.TestCase):
     def test_many_consumers(
         self, enqueue_threads_number=16, repeats=100, dequeue_threads_number=64
     ):
-        queue = actorpool.BatchingQueue(batch_dim=0)
+        queue = libtorchbeast.BatchingQueue(batch_dim=0)
 
         lock = threading.Lock()
         total_batches_consumed = 0
