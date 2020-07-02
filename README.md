@@ -122,7 +122,7 @@ PolyBeast also requires gRPC, which can be installed by running:
 
 ```shell
 $ git submodule update --init --recursive
-$ conda install -c anaconda protobuf
+$ conda install -c anaconda protobuf --yes
 $ ./scripts/install_grpc.sh
 ```
 
