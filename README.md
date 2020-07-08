@@ -115,8 +115,10 @@ $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
-PolyBeast requires installing PyTorch
-[from source](https://github.com/pytorch/pytorch#from-source).
+Install PyTorch either [from
+source](https://github.com/pytorch/pytorch#from-source) or as per its
+[website](https://pytorch.org/get-started/locally/) (select Conda and
+Python 3.7).
 
 PolyBeast also requires gRPC, which can be installed by running:
 
