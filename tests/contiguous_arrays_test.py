@@ -18,7 +18,10 @@ import threading
 import unittest
 
 import numpy as np
-from libtorchbeast import actorpool
+
+import torch
+
+import libtorchbeast
 
 
 class ContiguousArraysTest(unittest.TestCase):
@@ -28,17 +31,17 @@ class ContiguousArraysTest(unittest.TestCase):
         )
 
         server_address = ["unix:/tmp/contiguous_arrays_test"]
-        self.learner_queue = actorpool.BatchingQueue(
+        self.learner_queue = libtorchbeast.BatchingQueue(
             batch_dim=1, minimum_batch_size=1, maximum_batch_size=10, check_inputs=True
         )
-        self.inference_batcher = actorpool.DynamicBatcher(
+        self.inference_batcher = libtorchbeast.DynamicBatcher(
             batch_dim=1,
             minimum_batch_size=1,
             maximum_batch_size=10,
             timeout_ms=100,
             check_outputs=True,
         )
-        actor = actorpool.ActorPool(
+        actor = libtorchbeast.ActorPool(
             unroll_length=1,
             learner_queue=self.learner_queue,
             inference_batcher=self.inference_batcher,

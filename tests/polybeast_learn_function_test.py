@@ -19,7 +19,7 @@ from unittest import mock
 
 import numpy as np
 import torch
-from torchbeast import polybeast
+from torchbeast import polybeast_learner as polybeast
 
 
 def _state_dict_to_numpy(state_dict):

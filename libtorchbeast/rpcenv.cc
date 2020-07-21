@@ -212,7 +212,7 @@ class EnvServer {
 
 }  // namespace rpcenv
 
-PYBIND11_MODULE(rpcenv, m) {
+void init_rpcenv(py::module &m) {
   py::class_<rpcenv::EnvServer>(m, "Server")
       .def(py::init<py::object, const std::string &>(), py::arg("env_class"),
            py::arg("server_address") = "unix:/tmp/polybeast")

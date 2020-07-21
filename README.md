@@ -115,14 +115,16 @@ $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
-PolyBeast requires installing PyTorch
-[from source](https://github.com/pytorch/pytorch#from-source).
+Install PyTorch either [from
+source](https://github.com/pytorch/pytorch#from-source) or as per its
+[website](https://pytorch.org/get-started/locally/) (select Conda and
+Python 3.7).
 
 PolyBeast also requires gRPC, which can be installed by running:
 
 ```shell
 $ git submodule update --init --recursive
-$ conda install -c anaconda protobuf
+$ conda install -c anaconda protobuf --yes
 $ ./scripts/install_grpc.sh
 ```
 
@@ -159,6 +161,7 @@ Compile and install the C++ parts of PolyBeast:
 ```
 $ pip install nest/
 $ TORCHBEAST_LIBS_PREFIX=/usr/local CXX=c++ python setup.py install
+$ python setup.py build develop  # Sets up Python search paths.
 ```
 
 ### Running PolyBeast
@@ -169,7 +172,7 @@ To start both the environment servers and the learner process, run
 $ python -m torchbeast.polybeast
 ```
 
-The environment servers can also be started separately:
+The environment servers and the learner process can also be started separately:
 
 ```shell
 python -m torchbeast.polybeast_env --num_servers 10
@@ -178,7 +181,7 @@ python -m torchbeast.polybeast_env --num_servers 10
 Start another terminal and run:
 
 ```shell
-$ python -m torchbeast.polybeast --no_start_servers
+$ python3 -m torchbeast.polybeast_learner
 ```
 
 
@@ -246,8 +249,8 @@ pybind11.
 `third_party`: Collection of third-party dependencies as Git
 submodules. Includes [gRPC](https://grpc.io/).
 
-`torchbeast`: Contains `monobeast.py`, and `polybeast.py` and
-`polybeast_env.py`.
+`torchbeast`: Contains `monobeast.py`, and `polybeast.py`,
+`polybeast_learner.py` and `polybeast_env.py`.
 
 
 ## Hyperparamaters
