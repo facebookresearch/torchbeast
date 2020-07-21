@@ -161,6 +161,7 @@ Compile and install the C++ parts of PolyBeast:
 ```
 $ pip install nest/
 $ TORCHBEAST_LIBS_PREFIX=/usr/local CXX=c++ python setup.py install
+$ python setup.py build develop  # Sets up Python search paths.
 ```
 
 ### Running PolyBeast
