@@ -44,8 +44,8 @@ class CMakeBuild(build_ext.build_ext):
         )
 
         os.makedirs(self.build_temp, exist_ok=True)
-        build_type = "Debug" if self.debug else "Release"
 
+        build_type = "Debug" if self.debug else "Release"
         generator = "Ninja" if spawn.find_executable("ninja") else "Unix Makefiles"
 
         cmake_cmd = [
@@ -59,7 +59,6 @@ class CMakeBuild(build_ext.build_ext):
             "-DCMAKE_BUILD_TYPE=%s" % build_type,
             "-DCMAKE_INSTALL_PREFIX=%s" % sys.base_prefix,
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=%s" % output_path,
-            "-DgRPC_SSL_PROVIDER=package",  # -Werror issue in boringssl.
         ]
 
         build_cmd = ["cmake", "--build", ".", "--parallel"]
@@ -79,7 +78,7 @@ def main():
         name="libtorchbeast",
         ext_modules=[setuptools.Extension("libtorchbeast", sources=[])],
         install_requires=["torch>=1.4.0"],
-        version="0.0.2",
+        version="0.0.2.1",
         cmdclass={"build_ext": CMakeBuild},
         zip_safe=False,
     )
