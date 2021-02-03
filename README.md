@@ -124,15 +124,12 @@ PolyBeast also requires gRPC, which can be installed by running:
 
 ```shell
 $ git submodule update --init --recursive
-$ conda install -c anaconda protobuf --yes
-$ ./scripts/install_grpc.sh
 ```
 
 Finally, let's compile the C++ parts of PolyBeast:
 
 ```
 $ pip install nest/
-$ export LD_LIBRARY_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}/lib:${LD_LIBRARY_PATH}
 $ python setup.py install
 ```
 
@@ -146,12 +143,6 @@ $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
-On MacOS, we can use homebrew to install gRPC:
-
-```shell
-$ brew install grpc
-```
-
 PyTorch can be installed as per its
 [website](https://pytorch.org/get-started/locally/) (select Conda and
 Python 3.7).
@@ -159,9 +150,9 @@ Python 3.7).
 Compile and install the C++ parts of PolyBeast:
 
 ```
+$ git submodule update --init nest
 $ pip install nest/
-$ TORCHBEAST_LIBS_PREFIX=/usr/local CXX=c++ python setup.py install
-$ python setup.py build develop  # Sets up Python search paths.
+$ python setup.py install
 ```
 
 ### Running PolyBeast
