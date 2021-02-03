@@ -68,7 +68,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/grpc/third_party/googletest
 # ##############################################################################
 
 # TORCHBEAST PROTO FILES ### Proto file
-get_filename_component(hw_proto "cc/rpcenv.proto" ABSOLUTE)
+get_filename_component(hw_proto "src/proto/rpcenv.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 # Generated sources
@@ -95,16 +95,17 @@ target_include_directories(
 # Python module ###
 pybind11_add_module(
   _C
-  "cc/libtorchbeast.cc"
-  "cc/actorpool.cc"
-  "cc/rpcenv.cc"
+  "src/cc/libtorchbeast.cc"
+  "src/cc/actorpool.cc"
+  "src/cc/rpcenv.cc"
   "${hw_proto_srcs}"
   "${hw_proto_hdrs}"
   "${hw_grpc_srcs}"
   "${hw_grpc_hdrs}")
 
-target_include_directories(_C PUBLIC ${gen_proto_dir} ${Python3_INCLUDE_DIRS}
-                                     ${Python3_NumPy_INCLUDE_DIRS})
+target_include_directories(
+  _C PUBLIC ${gen_proto_dir} ${Python3_INCLUDE_DIRS}
+            ${Python3_NumPy_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/third_party/nest)
 target_link_libraries(
   _C
   PUBLIC grpc

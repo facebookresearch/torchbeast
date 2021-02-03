@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../nest/nest/nest.h"
+#include "nest/nest.h"
 #include "rpcenv.pb.h"
 
 template <typename T, typename Function>

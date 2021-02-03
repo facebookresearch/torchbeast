@@ -76,7 +76,9 @@ class CMakeBuild(build_ext.build_ext):
 def main():
     setuptools.setup(
         name="libtorchbeast",
+        packages=["libtorchbeast"],
         ext_modules=[setuptools.Extension("libtorchbeast", sources=[])],
+        package_dir={"libtorchbeast": "src/py/"},
         install_requires=["torch>=1.4.0"],
         version="0.0.2.1",
         cmdclass={"build_ext": CMakeBuild},
