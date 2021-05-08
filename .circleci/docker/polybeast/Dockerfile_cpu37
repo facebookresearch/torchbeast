@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:experimental
+FROM ubuntu:18.04
+
+SHELL ["/bin/bash", "-c"]
+
+
+RUN apt-get update && apt-get install -y \
+    python3-setuptools \
+    python3-pip \
+    git \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    wget \
+    pkg-config \
+    ssh \
+    tar \
+    gzip \
+    ca-certificates
+
+WORKDIR /src
+
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+RUN bash Miniconda3-latest-Linux-x86_64.sh -b
+
+ENV PATH /root/miniconda3/bin:$PATH
+
+ENV CONDA_PREFIX /root/miniconda3/envs/torchbeast
+
+# Clear .bashrc (it refuses to run non-interactively otherwise)
+RUN echo > ~/.bashrc
+
+# Add conda logic to .bashrc
+RUN conda init bash
+
+RUN conda create -y -n torchbeast python=3.7 \
+    protobuf \
+    numpy \
+    ninja \
+    pyyaml \
+    mkl \
+    mkl-include \
+    setuptools \
+    cmake \
+    cffi \
+    typing
+
+# Activate environment in .bashrc
+RUN echo "conda activate torchbeast" >> /root/.bashrc
+
+# Make bash excecute .bashrc even when running non-interactively.
+ENV BASH_ENV /root/.bashrc
+
+# Install PyTorch.
+
+# Would like to install PyTorch via pip. Unfortunately, there's binary
+# incompatibility issues (https://github.com/pytorch/pytorch/issues/18128).
+# Otherwise, this would work:
+# # # Install PyTorch. This needs increased Docker memory.
+# # # (https://github.com/pytorch/pytorch/issues/1022)
+# # RUN pip download torch
+# # RUN pip install torch*.whl
+
+RUN git clone -b v1.2.0 --recursive https://github.com/pytorch/pytorch
+
+WORKDIR /src/pytorch
+
+ENV CMAKE_PREFIX_PATH ${CONDA_PREFIX}
+
+RUN BUILD_TEST=0 BUILD_CAFFE2_OPS=0 python setup.py install
+
+COPY third_party/grpc /src/grpc
+
+COPY scripts/install_grpc.sh /src/install_grpc.sh
+
+RUN chmod +x /src/install_grpc.sh
+
+RUN GRPC_DIR=/src/grpc /src/install_grpc.sh

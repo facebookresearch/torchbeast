@@ -1,0 +1,304 @@
+version: 2.1
+
+
+# -------------------------------------------------------------------------------------
+# Environments where we run our jobs
+# -------------------------------------------------------------------------------------
+
+executors:
+  standard_cpu37:
+    docker:
+      - image: circleci/python:3.7.3
+        environment:
+          OMP_NUM_THREADS: 1
+
+  polybeast_cpu37:
+    docker:
+      - image: torchbeast/ci-polybeast-cpu37:latest
+        environment:
+          OMP_NUM_THREADS: 1
+
+  docker-publisher:
+    environment:
+      IMAGE_NAME: torchbeast/ci-polybeast-cpu37
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    resource_class: 2xlarge+  # 20 vCPUs, 40GB RAM
+
+  # TODO(nantas): setup gpu jobs
+  # standard_gpu37:
+  #   environment:
+  #     CUDA_VERSION: "10.0"
+  #   machine:
+  #     image: default
+  #   resource_class: gpu.medium # tesla m60
+
+
+# -------------------------------------------------------------------------------------
+# Functions
+# -------------------------------------------------------------------------------------
+
+git_fix: &git_fix
+  # circleci sets master to the tip of the branch, which isn't super useful for us.
+  # better if master looks like it would on our local machines
+  run:
+    name: Fixes git
+    command: |
+      ( [[ "$CIRCLE_BRANCH" != "master" ]] && git branch -f master origin/master ) || true
+
+git_recursive: &git_recursive
+  run:
+    name: Pull submodules recursively
+    command: |
+      git submodule update --init --recursive
+
+setup: &setup
+  run:
+    name: Sets up the virtual environment
+    command: |
+      mkdir -p ~/venv
+      virtualenv --python=python3 ~/venv
+      echo ". ~/venv/bin/activate" >> $BASH_ENV
+      . ~/venv/bin/activate
+      python --version
+      pip3 install --upgrade --progress-bar off pip
+
+installdeps: &installdeps
+  run:
+    name: Installs basic dependencies
+    command: |
+      pip install --progress-bar off -r requirements.txt
+
+installnest: &installnest
+  run:
+    name: Installs nest
+    command: |
+      git submodule update --init --recursive -- third_party/nest
+      pip install third_party/nest
+
+install_libtorchbeast: &install_libtorchbeast
+  run:
+    name: Install libtorchbeast
+    command: |
+      git submodule update --init --recursive -- third_party/nest
+      echo 'export LD_LIBRARY_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}/lib:${LD_LIBRARY_PATH}' >> $BASH_ENV
+      source $BASH_ENV
+      echo $LD_LIBRARY_PATH
+      echo $CONDA_PREFIX
+      python setup.py install
+
+installtorchcpu37: &installtorchcpu37
+  run:
+    name: Install torch CPU and dependencies
+    command: |
+      pip3 install --progress-bar off https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp37-cp37m-linux_x86_64.whl
+
+installtorchgpu: &installtorchgpu
+  run:
+    name: Install torch GPU and dependencies
+    command: |
+      pip3 install --progress-bar off torch
+
+setupcuda: &setupcuda
+  run:
+    name: Setup CUDA
+    working_directory: ~/
+    command: |
+      # download and install nvidia drivers, cuda, etc
+      wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-410.79.run'
+      sudo /bin/bash ./NVIDIA-Linux-x86_64-410.79.run -s --no-drm
+      wget -q https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1404-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+      sudo dpkg -i cuda-repo-ubuntu1404-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+      sudo apt-key add /var/cuda-repo-10-1-local-10.1.105-418.39/7fa2af80.pub
+      nvidia-smi
+      pyenv global 3.6.5
+
+
+# -------------------------------------------------------------------------------------
+# Actual jobs
+# -------------------------------------------------------------------------------------
+
+jobs:
+
+  # --------------------------
+  # Docker related
+  # --------------------------
+
+  build-polybeast-image:
+    executor: docker-publisher
+    steps:
+      - checkout
+      - <<: *git_recursive
+      - setup_remote_docker
+      - run:
+          name: Build PolyBeast docker image
+          command: |
+            docker build -t $IMAGE_NAME:latest -f .circleci/docker/polybeast/Dockerfile_cpu37 .
+      - run:
+          name: Archive Docker image
+          command: docker save -o image.tar $IMAGE_NAME
+      - persist_to_workspace:
+          root: .
+          paths:
+            - image.tar
+
+  publish-polybeast:
+    executor: docker-publisher
+    parameters:
+      docker_tag:
+        type: string
+        default: "latest"
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker
+      - run:
+          name: Load archived Docker image
+          command: docker load -i /tmp/workspace/image.tar
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            IMAGE_TAG="1.1.${CIRCLE_BUILD_NUM}"
+            docker tag $IMAGE_NAME:<< parameters.docker_tag >> $IMAGE_NAME:$IMAGE_TAG
+            docker push $IMAGE_NAME:<< parameters.docker_tag >>
+            docker push $IMAGE_NAME:$IMAGE_TAG
+
+  # --------------------------
+  # Tests
+  # --------------------------
+
+  black:
+    executor: standard_cpu37
+    working_directory: ~/torchbeast
+    steps:
+      - checkout
+      - <<: *git_fix
+      - <<: *setup
+      - run:
+          name: Minimum black dependencies
+          working_directory: ~/torchbeast
+          command: |
+            pip install -q gitpython black  # only what's needd to lint
+      - run:
+          name: Run black check
+          working_directory: ~/torchbeast
+          command: |
+            bash ./tests/lint_changed.sh -b
+  lint:
+    executor: standard_cpu37
+    working_directory: ~/torchbeast
+    steps:
+      - checkout
+      - <<: *git_fix
+      - <<: *setup
+      - run:
+          name: Minimum lint dependencies
+          working_directory: ~/torchbeast
+          command: |
+            pip install -q flake8 gitpython flake8-bugbear  # only what's needd to lint
+      - run:
+          name: Run linter
+          working_directory: ~/torchbeast
+          command: |
+            bash ./tests/lint_changed.sh
+  tests_common_37:
+    executor: standard_cpu37
+    working_directory: ~/torchbeast
+    steps:
+      - checkout
+      - <<: *git_fix
+      - <<: *setup
+      - <<: *installtorchcpu37  # first torch version, then deps
+      - <<: *installdeps
+      - run:
+          name: Tests (py37)
+          command: |
+            python -m tests.vtrace_test
+
+  tests_polybeast_37:
+    executor: polybeast_cpu37
+    working_directory: ~/torchbeast
+    steps:
+      - checkout
+      - <<: *git_fix
+      - <<: *install_libtorchbeast
+      - <<: *installdeps
+      - <<: *installnest
+      - run:
+          name: Tests (py37)
+          command: |
+            python setup.py test
+
+all_jobs_37: &all_jobs_37
+  jobs:
+    - black
+    - lint
+    - tests_common_37
+    - tests_polybeast_37
+
+
+# -------------------------------------------------------------------------------------
+# Workflows
+# -------------------------------------------------------------------------------------
+
+workflows:
+  version: 2
+
+  on_commit:
+    <<: *all_jobs_37
+
+  test_nightly:
+    <<: *all_jobs_37
+    triggers:
+      - schedule:
+          cron: "0 6 * * *" # 6am UTC
+          filters:
+            branches:
+              only:
+                - master
+
+  build_and_deploy_nightly:
+    jobs:
+      - build-polybeast-image
+      - publish-polybeast:
+          requires:
+            - build-polybeast-image
+    triggers:
+      - schedule:
+          cron: "0 6 * * *" # 6am UTC
+          filters:
+            branches:
+              only:
+                - master
+
+  build_and_deploy_on_master:
+    jobs:
+      - build-polybeast-image:
+          filters:
+            branches:
+              only: master
+      - publish-polybeast:
+          requires:
+            - build-polybeast-image
+          filters:
+            branches:
+              only: master
+
+  build_and_deploy_on_tag:
+    jobs:
+      - build-polybeast-image:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish-polybeast:
+          docker_tag: "${CIRCLE_TAG}"
+          requires:
+            - build-polybeast-image
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
