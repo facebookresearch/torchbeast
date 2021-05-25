@@ -90,7 +90,7 @@ add_custom_command(
 # Nest ###
 add_library(nest INTERFACE)
 target_include_directories(
-  nest INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/nest/nest)
+  nest INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/nest/nest)
 
 # Python module ###
 pybind11_add_module(
@@ -105,7 +105,7 @@ pybind11_add_module(
 
 target_include_directories(
   _C PUBLIC ${gen_proto_dir} ${Python3_INCLUDE_DIRS}
-            ${Python3_NumPy_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/third_party/nest)
+            ${Python3_NumPy_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/nest)
 target_link_libraries(
   _C
   PUBLIC grpc
