@@ -110,17 +110,17 @@ To run PolyBeast directly on Linux or MacOS, follow this guide.
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast python=3.7
+$ conda create -n torchbeast
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
 Install PyTorch either [from
 source](https://github.com/pytorch/pytorch#from-source) or as per its
-[website](https://pytorch.org/get-started/locally/) (select Conda and
-Python 3.7).
+[website](https://pytorch.org/get-started/locally/) (select Conda).
 
-PolyBeast also requires gRPC, which can be installed by running:
+PolyBeast also requires gRPC and other third-party software, which can
+be installed by running:
 
 ```shell
 $ git submodule update --init --recursive
@@ -138,19 +138,24 @@ $ python setup.py install
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast python=3.7
+$ conda create -n torchbeast
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
 PyTorch can be installed as per its
-[website](https://pytorch.org/get-started/locally/) (select Conda and
-Python 3.7).
+[website](https://pytorch.org/get-started/locally/) (select Conda).
 
-Compile and install the C++ parts of PolyBeast:
+PolyBeast also requires gRPC and other third-party software, which can
+be installed by running:
+
+```shell
+$ git submodule update --init --recursive
+```
+
+Finally, let's compile the C++ parts of PolyBeast:
 
 ```
-$ git submodule update --init nest
 $ pip install nest/
 $ python setup.py install
 ```
