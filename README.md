@@ -110,29 +110,26 @@ To run PolyBeast directly on Linux or MacOS, follow this guide.
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast python=3.7
+$ conda create -n torchbeast
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
 Install PyTorch either [from
 source](https://github.com/pytorch/pytorch#from-source) or as per its
-[website](https://pytorch.org/get-started/locally/) (select Conda and
-Python 3.7).
+[website](https://pytorch.org/get-started/locally/) (select Conda).
 
-PolyBeast also requires gRPC, which can be installed by running:
+PolyBeast also requires gRPC and other third-party software, which can
+be installed by running:
 
 ```shell
 $ git submodule update --init --recursive
-$ conda install -c anaconda protobuf --yes
-$ ./scripts/install_grpc.sh
 ```
 
 Finally, let's compile the C++ parts of PolyBeast:
 
 ```
 $ pip install nest/
-$ export LD_LIBRARY_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}/lib:${LD_LIBRARY_PATH}
 $ python setup.py install
 ```
 
@@ -141,27 +138,26 @@ $ python setup.py install
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast python=3.7
+$ conda create -n torchbeast
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
 
-On MacOS, we can use homebrew to install gRPC:
+PyTorch can be installed as per its
+[website](https://pytorch.org/get-started/locally/) (select Conda).
+
+PolyBeast also requires gRPC and other third-party software, which can
+be installed by running:
 
 ```shell
-$ brew install grpc
+$ git submodule update --init --recursive
 ```
 
-PyTorch can be installed as per its
-[website](https://pytorch.org/get-started/locally/) (select Conda and
-Python 3.7).
-
-Compile and install the C++ parts of PolyBeast:
+Finally, let's compile the C++ parts of PolyBeast:
 
 ```
 $ pip install nest/
-$ TORCHBEAST_LIBS_PREFIX=/usr/local CXX=c++ python setup.py install
-$ python setup.py build develop  # Sets up Python search paths.
+$ python setup.py install
 ```
 
 ### Running PolyBeast

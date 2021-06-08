@@ -20,120 +20,69 @@
 # Potentially also set TORCHBEAST_LIBS_PREFIX.
 
 import os
+import pathlib
 import subprocess
 import sys
-import unittest
 
-import numpy as np
 import setuptools
-from torch.utils import cpp_extension
+from setuptools.command import build_ext
+from distutils import spawn
+from distutils import sysconfig
 
 
-PREFIX = os.getenv("CONDA_PREFIX")
+class CMakeBuild(build_ext.build_ext):
+    def run(self):  # Necessary for pip install -e.
+        for ext in self.extensions:
+            self.build_extension(ext)
 
-if os.getenv("TORCHBEAST_LIBS_PREFIX"):
-    PREFIX = os.getenv("TORCHBEAST_LIBS_PREFIX")
-if not PREFIX:
-    PREFIX = "/usr/local"
-
-
-def build_pb():
-    protoc = f"{PREFIX}/bin/protoc"
-
-    # Hard-code client.proto for now.
-    source = os.path.join(os.path.dirname(__file__), "libtorchbeast", "rpcenv.proto")
-    output = source.replace(".proto", ".pb.cc")
-
-    if os.path.exists(output) and (
-        os.path.exists(source) and os.path.getmtime(source) < os.path.getmtime(output)
-    ):
-        return
-
-    print("calling protoc")
-    if (
-        subprocess.call(
-            [protoc, "--cpp_out=libtorchbeast", "-Ilibtorchbeast", "rpcenv.proto"]
+    def build_extension(self, ext):
+        source_path = pathlib.Path(__file__).parent.resolve()
+        output_path = (
+            pathlib.Path(self.get_ext_fullpath(ext.name))
+            .parent.joinpath("libtorchbeast")
+            .resolve()
         )
-        != 0
-    ):
-        sys.exit(-1)
-    if (
-        subprocess.call(
-            protoc + " --grpc_out=libtorchbeast -Ilibtorchbeast"
-            " --plugin=protoc-gen-grpc=`which grpc_cpp_plugin`"
-            " rpcenv.proto",
-            shell=True,
-        )
-        != 0
-    ):
-        sys.exit(-1)
 
+        os.makedirs(self.build_temp, exist_ok=True)
 
-def test_suite():
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover("tests", pattern="*_test.py")
-    return test_suite
+        build_type = "Debug" if self.debug else "Release"
+        generator = "Ninja" if spawn.find_executable("ninja") else "Unix Makefiles"
 
+        cmake_cmd = [
+            "cmake",
+            str(source_path),
+            "-G%s" % generator,
+            "-DPYTHON_SRC_PARENT=%s" % source_path,
+            "-DPYTHON_EXECUTABLE=%s" % sys.executable,
+            "-DPYTHON_INCLUDE_DIR=%s" % sysconfig.get_python_inc(),
+            "-DPYTHON_LIBRARY=%s" % sysconfig.get_config_var("LIBDIR"),
+            "-DCMAKE_BUILD_TYPE=%s" % build_type,
+            "-DCMAKE_INSTALL_PREFIX=%s" % sys.base_prefix,
+            "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=%s" % output_path,
+        ]
 
-class build_ext(cpp_extension.BuildExtension):
-    def run(self):
-        build_pb()
-        cpp_extension.BuildExtension.run(self)
+        build_cmd = ["cmake", "--build", ".", "--parallel"]
+        install_cmd = build_cmd + ["--target", "install"]
+
+        try:
+            subprocess.check_call(cmake_cmd, cwd=self.build_temp)
+            subprocess.check_call(build_cmd, cwd=self.build_temp)
+            subprocess.check_call(install_cmd, cwd=self.build_temp)
+        except subprocess.CalledProcessError:
+            # Don't obscure the error with a setuptools backtrace.
+            sys.exit(1)
 
 
 def main():
-    extra_compile_args = []
-    extra_link_args = []
-
-    grpc_objects = [
-        f"{PREFIX}/lib/libgrpc++.a",
-        f"{PREFIX}/lib/libgrpc.a",
-        f"{PREFIX}/lib/libgpr.a",
-        f"{PREFIX}/lib/libaddress_sorting.a",
-    ]
-
-    include_dirs = cpp_extension.include_paths() + [
-        np.get_include(),
-        f"{PREFIX}/include",
-    ]
-    libraries = []
-
-    if sys.platform == "darwin":
-        extra_compile_args += ["-stdlib=libc++", "-mmacosx-version-min=10.14"]
-        extra_link_args += ["-stdlib=libc++", "-mmacosx-version-min=10.14"]
-
-        # Relevant only when c-cares is not embedded in grpc, e.g. when
-        # installing grpc via homebrew.
-        libraries.append("cares")
-    elif sys.platform == "linux":
-        libraries.append("z")
-
-    grpc_objects.append(f"{PREFIX}/lib/libprotobuf.a")
-
-    libtorchbeast = cpp_extension.CppExtension(
-        name="libtorchbeast._C",
-        sources=[
-            "libtorchbeast/libtorchbeast.cc",
-            "libtorchbeast/actorpool.cc",
-            "libtorchbeast/rpcenv.cc",
-            "libtorchbeast/rpcenv.pb.cc",
-            "libtorchbeast/rpcenv.grpc.pb.cc",
-        ],
-        include_dirs=include_dirs,
-        libraries=libraries,
-        language="c++",
-        extra_compile_args=["-std=c++17"] + extra_compile_args,
-        extra_link_args=extra_link_args,
-        extra_objects=grpc_objects,
-    )
-
     setuptools.setup(
         name="libtorchbeast",
         packages=["libtorchbeast"],
-        version="0.0.14",
-        ext_modules=[libtorchbeast],
-        cmdclass={"build_ext": build_ext},
-        test_suite="setup.test_suite",
+        ext_modules=[setuptools.Extension("libtorchbeast", sources=[])],
+        package_dir={"libtorchbeast": "src/py/"},
+        install_requires=["torch>=1.4.0"],
+        version="0.0.20",
+        cmdclass={"build_ext": CMakeBuild},
+        zip_safe=False,
     )
 
 

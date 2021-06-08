@@ -39,8 +39,8 @@
 #include "rpcenv.grpc.pb.h"
 #include "rpcenv.pb.h"
 
-#include "../nest/nest/nest.h"
-#include "../nest/nest/nest_pybind.h"
+#include "nest/nest.h"
+#include "nest/nest_pybind.h"
 
 namespace py = pybind11;
 
