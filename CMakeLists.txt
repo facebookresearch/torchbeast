@@ -15,7 +15,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ##############################################################################
 # Declare dependencies
 find_package(Threads REQUIRED)
-find_package(Python3 3.7 EXACT COMPONENTS Interpreter Development NumPy)
+find_package(Python3 3.7 COMPONENTS Interpreter Development NumPy)
 
 # Make sure we are compatible with torch ABI. Must go before any
 # add_subdirectory.
