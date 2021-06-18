@@ -110,7 +110,7 @@ To run PolyBeast directly on Linux or MacOS, follow this guide.
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast
+$ conda create -n torchbeast python=3.7
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
