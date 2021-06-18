@@ -34,7 +34,7 @@ To set it up, create a new conda environment and install MonoBeast's
 requirements:
 
 ```bash
-$ conda create -n torchbeast python=3.7
+$ conda create -n torchbeast
 $ conda activate torchbeast
 $ conda install pytorch -c pytorch
 $ pip install -r requirements.txt
@@ -110,7 +110,7 @@ To run PolyBeast directly on Linux or MacOS, follow this guide.
 Create a new Conda environment, and install PolyBeast's requirements:
 
 ```shell
-$ conda create -n torchbeast
+$ conda create -n torchbeast python=3.7
 $ conda activate torchbeast
 $ pip install -r requirements.txt
 ```
