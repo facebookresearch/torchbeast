@@ -10,7 +10,7 @@
 set -e
 
 CMD="flake8"
-CHANGED_FILES="$(git diff --diff-filter=d --name-only master... | grep '\.py$' | grep -v "torchbeast/atari_wrappers.py" | tr '\n' ' ')"
+CHANGED_FILES="$(git diff --diff-filter=d --name-only main... | grep '\.py$' | grep -v "torchbeast/atari_wrappers.py" | tr '\n' ' ')"
 while getopts bi opt; do
   case $opt in
     b)
